@@ -33,6 +33,22 @@ export function createSupabaseAdminClient() {
   );
 }
 
+export async function getSessionForUser(sessionId: string, userId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("id, clerk_user_id")
+    .eq("id", sessionId)
+    .eq("clerk_user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
 export async function getSessionsForUser(userId: string): Promise<SessionSummary[]> {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
@@ -56,10 +72,10 @@ export async function getSessionsForUser(userId: string): Promise<SessionSummary
     throw new Error(error.message);
   }
 
-          return ((data ?? []) as SessionRecord[]).map((session) => {
-            const scores = (session.answers ?? [])
-              .flatMap((answer) => answer.feedback?.map((row) => row.overall_score) ?? [])
-              .filter((score: number | null) => typeof score === "number");
+  return ((data ?? []) as SessionRecord[]).map((session) => {
+    const scores = (session.answers ?? [])
+      .flatMap((answer) => answer.feedback?.map((row) => row.overall_score) ?? [])
+      .filter((score): score is number => typeof score === "number");
 
     return {
       id: session.id,

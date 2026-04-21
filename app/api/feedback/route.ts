@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { hasOpenAIEnv, hasSupabaseEnv } from "@/lib/env";
 import { getSTARFeedback } from "@/lib/openai";
 import { feedbackRequestSchema } from "@/lib/schemas";
-import { createSupabaseAdminClient } from "@/lib/supabase";
+import { createSupabaseAdminClient, getSessionForUser } from "@/lib/supabase";
 import type { FeedbackRow } from "@/lib/types";
 
 interface FeedbackRowRecord {
@@ -73,7 +73,27 @@ export async function POST(request: NextRequest) {
   const supabase = createSupabaseAdminClient();
   const payload = parsed.data;
 
-  const { data: answerRow, error: answerError } = await supabase
+  let answerId: string | null = null;
+
+  try {
+    const session = await getSessionForUser(payload.sessionId, userId);
+
+    if (!session) {
+      return NextResponse.json(
+        { error: "Session not found or does not belong to the current user." },
+        { status: 404 },
+      );
+    }
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Unable to verify the current session.",
+      },
+      { status: 500 },
+    );
+  }
+
+  const { data: insertedAnswer, error: insertedAnswerError } = await supabase
     .from("answers")
     .insert({
       session_id: payload.sessionId,
@@ -85,9 +105,11 @@ export async function POST(request: NextRequest) {
     .select()
     .single();
 
-  if (answerError) {
-    return NextResponse.json({ error: answerError.message }, { status: 500 });
+  if (insertedAnswerError) {
+    return NextResponse.json({ error: insertedAnswerError.message }, { status: 500 });
   }
+
+  answerId = insertedAnswer.id;
 
   try {
     const starFeedback = await getSTARFeedback(
@@ -99,7 +121,7 @@ export async function POST(request: NextRequest) {
     const { data: feedbackRow, error: feedbackError } = await supabase
       .from("feedback")
       .insert({
-        answer_id: answerRow.id,
+        answer_id: insertedAnswer.id,
         clerk_user_id: userId,
         situation_score: starFeedback.situation.score,
         task_score: starFeedback.task.score,
@@ -121,11 +143,15 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (feedbackError) {
-      return NextResponse.json({ error: feedbackError.message }, { status: 500 });
+      throw new Error(feedbackError.message);
     }
 
-    return NextResponse.json({ answer: answerRow, feedback: mapFeedbackRow(feedbackRow) });
+    return NextResponse.json({ answer: insertedAnswer, feedback: mapFeedbackRow(feedbackRow) });
   } catch (error) {
+    if (answerId) {
+      await supabase.from("answers").delete().eq("id", answerId).eq("clerk_user_id", userId);
+    }
+
     return NextResponse.json(
       {
         error:

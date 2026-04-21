@@ -16,8 +16,17 @@ export async function GET() {
     return NextResponse.json({ error: "Supabase is not configured." }, { status: 500 });
   }
 
-  const sessions = await getSessionsForUser(userId);
-  return NextResponse.json(sessions);
+  try {
+    const sessions = await getSessionsForUser(userId);
+    return NextResponse.json(sessions);
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Unable to load sessions right now.",
+      },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {

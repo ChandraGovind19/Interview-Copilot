@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Fraunces, JetBrains_Mono, Manrope } from "next/font/google";
-import Script from "next/script";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -34,17 +33,21 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" className={`${sans.variable} ${mono.variable} ${heading.variable} h-full`} suppressHydrationWarning>
+        <head>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                try {
+                  var storedTheme = localStorage.getItem("theme");
+                  var theme = storedTheme === "dark" ? "dark" : "light";
+                  document.documentElement.classList.toggle("dark", theme === "dark");
+                  document.documentElement.dataset.theme = theme;
+                } catch (error) {}
+              `,
+            }}
+          />
+        </head>
         <body className="min-h-full bg-background font-sans text-foreground antialiased">
-          <Script id="theme-init" strategy="beforeInteractive">
-            {`
-              try {
-                var storedTheme = localStorage.getItem("theme");
-                var theme = storedTheme === "dark" ? "dark" : "light";
-                document.documentElement.classList.toggle("dark", theme === "dark");
-                document.documentElement.dataset.theme = theme;
-              } catch (error) {}
-            `}
-          </Script>
           <ThemeProvider>{children}</ThemeProvider>
         </body>
       </html>

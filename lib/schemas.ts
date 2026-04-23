@@ -5,6 +5,11 @@ export const createSessionSchema = z.object({
   jobRole: z.string().trim().max(160).optional(),
 });
 
+export const updateSessionSchema = z.object({
+  title: z.string().trim().min(3, "Session title is too short.").max(120),
+  jobRole: z.string().trim().max(160).optional(),
+});
+
 export const feedbackRequestSchema = z.object({
   sessionId: z.string().uuid("Session id must be a valid UUID."),
   question: z.string().trim().min(10),

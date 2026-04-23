@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 import type { SessionSummary } from "@/lib/types";
 
 interface SessionHistoryListProps {
@@ -29,7 +32,7 @@ export function SessionHistoryList({ sessions }: SessionHistoryListProps) {
             {sessions.map((session) => (
               <div
                 key={session.id}
-                className="surface-subtle grid gap-4 p-5 sm:grid-cols-[minmax(0,1.2fr)_160px_150px] sm:items-center"
+                className="surface-subtle grid gap-4 p-5 sm:grid-cols-[minmax(0,1.2fr)_160px_150px_auto] sm:items-center"
               >
                 <div>
                   <p className="text-lg font-semibold text-foreground">{session.title}</p>
@@ -47,6 +50,14 @@ export function SessionHistoryList({ sessions }: SessionHistoryListProps) {
                   <p className="text-sm text-muted-foreground">
                     {session.avgScore ? `Avg ${session.avgScore}/10` : "No scores yet"}
                   </p>
+                </div>
+                <div className="sm:text-right">
+                  <Link
+                    href={`/dashboard/practice/${session.id}`}
+                    className={buttonVariants({ variant: "outline" })}
+                  >
+                    Open
+                  </Link>
                 </div>
               </div>
             ))}

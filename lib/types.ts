@@ -18,6 +18,15 @@ export interface FeedbackRow {
   keywordsMissing: string[];
 }
 
+export interface SessionAnswerHistory {
+  id: string;
+  question: string;
+  questionCategory: string | null;
+  answerText: string;
+  createdAt: string;
+  feedback: FeedbackRow | null;
+}
+
 export interface SessionSummary {
   id: string;
   title: string;
@@ -25,6 +34,10 @@ export interface SessionSummary {
   createdAt: string;
   answerCount: number;
   avgScore: number | null;
+}
+
+export interface SessionDetail extends SessionSummary {
+  answers: SessionAnswerHistory[];
 }
 
 export interface DashboardSnapshot {
@@ -39,6 +52,10 @@ export interface DashboardSnapshot {
 export interface ApiFeedbackResponse {
   answer: {
     id: string;
+    question: string;
+    question_category: string | null;
+    answer_text: string;
+    created_at: string;
   };
   feedback: FeedbackRow;
 }

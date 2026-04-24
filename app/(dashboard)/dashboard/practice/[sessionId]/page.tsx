@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { PracticeWorkspace } from "@/components/practice-workspace";
 import { hasOpenAIEnv, hasSupabaseEnv } from "@/lib/env";
-import { getSessionDetailForUser } from "@/lib/supabase";
+import { getExperienceProfileForUser, getSessionDetailForUser } from "@/lib/supabase";
 
 export default async function SessionPracticePage({
   params,
@@ -18,6 +18,7 @@ export default async function SessionPracticePage({
   }
 
   const session = await getSessionDetailForUser(sessionId, userId);
+  const experienceProfile = await getExperienceProfileForUser(userId);
 
   if (!session) {
     notFound();
@@ -28,6 +29,7 @@ export default async function SessionPracticePage({
       <PracticeWorkspace
         isOpenAIConfigured={hasOpenAIEnv()}
         isSupabaseConfigured={hasSupabaseEnv()}
+        hasExperienceProfile={Boolean(experienceProfile)}
         initialSession={session}
       />
     </main>

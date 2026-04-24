@@ -16,6 +16,7 @@ import { QUESTION_BANK } from "@/lib/question-bank";
 import type {
   ApiFeedbackResponse,
   FeedbackRow,
+  PersonalizedQuestion,
   SessionAnswerHistory,
   SessionDetail,
   SessionSummary,
@@ -24,6 +25,7 @@ import type {
 interface PracticeWorkspaceProps {
   isOpenAIConfigured: boolean;
   isSupabaseConfigured: boolean;
+  hasExperienceProfile?: boolean;
   sessions?: SessionSummary[];
   initialSession?: SessionDetail | null;
 }
@@ -31,6 +33,7 @@ interface PracticeWorkspaceProps {
 interface PracticeQuestion {
   category: string;
   question: string;
+  source: "bank" | "custom" | "personalized";
 }
 
 function formatSessionDate(value: string) {
@@ -370,9 +373,11 @@ function SessionHistory({
 function SessionWorkspace({
   session,
   isConfigured,
+  hasExperienceProfile,
 }: {
   session: SessionDetail;
   isConfigured: boolean;
+  hasExperienceProfile: boolean;
 }) {
   const router = useRouter();
   const [sessionMeta, setSessionMeta] = useState({
@@ -385,20 +390,24 @@ function SessionWorkspace({
     );
 
     if (matchingQuestion) {
-      return matchingQuestion;
+      return { ...matchingQuestion, source: "bank" };
     }
 
     if (session.answers[0]?.question) {
       return {
         category: session.answers[0].questionCategory ?? "Custom question",
         question: session.answers[0].question,
+        source: "custom",
       };
     }
 
-    return { ...QUESTION_BANK[0] };
+    return { ...QUESTION_BANK[0], source: "bank" };
   });
   const [customQuestionCategory, setCustomQuestionCategory] = useState("Custom question");
   const [customQuestionText, setCustomQuestionText] = useState("");
+  const [personalizedQuestions, setPersonalizedQuestions] = useState<PersonalizedQuestion[]>([]);
+  const [personalizedLoading, setPersonalizedLoading] = useState(false);
+  const [personalizedError, setPersonalizedError] = useState<string | null>(null);
   const [answerText, setAnswerText] = useState("");
   const [feedback, setFeedback] = useState<FeedbackRow | null>(session.answers[0]?.feedback ?? null);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
@@ -428,20 +437,23 @@ function SessionWorkspace({
   }, [answerHistory]);
 
   const selectedQuestionSource = useMemo(() => {
-    return QUESTION_BANK.some((item) => item.question === selectedQuestion.question)
+    return selectedQuestion.source === "bank"
       ? "Question bank"
-      : "Custom question";
+      : selectedQuestion.source === "personalized"
+        ? "Personalized"
+        : "Custom question";
   }, [selectedQuestion]);
 
   function reuseQuestion(question: string, category: string | null) {
     const matchingQuestion = QUESTION_BANK.find((item) => item.question === question);
 
     if (matchingQuestion) {
-      setSelectedQuestion(matchingQuestion);
+      setSelectedQuestion({ ...matchingQuestion, source: "bank" });
     } else {
       setSelectedQuestion({
         category: category ?? "Practice",
         question,
+        source: "custom",
       });
     }
 
@@ -459,9 +471,49 @@ function SessionWorkspace({
     setSelectedQuestion({
       category: customQuestionCategory.trim() || "Custom question",
       question: customQuestionText.trim(),
+      source: "custom",
     });
 
     scrollToSection(answerEditorRef.current);
+  }
+
+  async function handleGeneratePersonalizedQuestions() {
+    setPersonalizedError(null);
+    setPersonalizedLoading(true);
+
+    try {
+      const response = await fetch("/api/questions/personalized", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionRole: sessionMeta.jobRole.trim() || undefined,
+        }),
+      });
+
+      const data = (await response.json()) as { questions?: PersonalizedQuestion[]; error?: string };
+
+      if (!response.ok || !data.questions) {
+        throw new Error(data.error ?? "Unable to generate personalized questions.");
+      }
+
+      setPersonalizedQuestions(data.questions);
+
+      if (data.questions[0]) {
+        setSelectedQuestion({
+          category: data.questions[0].category,
+          question: data.questions[0].question,
+          source: "personalized",
+        });
+      }
+    } catch (generationError) {
+      setPersonalizedError(
+        generationError instanceof Error
+          ? generationError.message
+          : "Unable to generate personalized questions.",
+      );
+    } finally {
+      setPersonalizedLoading(false);
+    }
   }
 
   function reviewFeedback(nextFeedback: FeedbackRow | null) {
@@ -699,7 +751,7 @@ function SessionWorkspace({
                   <button
                     key={item.question}
                     type="button"
-                    onClick={() => setSelectedQuestion(item)}
+                    onClick={() => setSelectedQuestion({ ...item, source: "bank" })}
                     className={[
                       "w-full rounded-[22px] border px-4 py-4 text-left transition-all",
                       isSelected
@@ -760,6 +812,72 @@ function SessionWorkspace({
                 >
                   Use custom question
                 </Button>
+              </div>
+
+              <div className="space-y-4 rounded-[24px] border border-border/70 bg-background/55 p-4 dark:bg-card/45">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">Personalized questions</p>
+                  <p className="text-sm leading-7 text-muted-foreground">
+                    Generate interview questions from the saved experience profile and the active
+                    role.
+                  </p>
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="border-border/80 bg-background/80 shadow-sm hover:border-primary/30 dark:border-border dark:bg-background/20"
+                  onClick={handleGeneratePersonalizedQuestions}
+                  disabled={personalizedLoading || !isConfigured || !hasExperienceProfile}
+                >
+                  {personalizedLoading ? "Generating questions..." : "Generate personalized questions"}
+                </Button>
+
+                {!hasExperienceProfile ? (
+                  <p className="text-sm leading-7 text-muted-foreground">
+                    Save an experience profile on the dashboard first to unlock personalized
+                    questions.
+                  </p>
+                ) : null}
+
+                {personalizedError ? (
+                  <p className="text-sm leading-7 text-red-700">{personalizedError}</p>
+                ) : null}
+
+                {personalizedQuestions.length ? (
+                  <div className="space-y-3">
+                    {personalizedQuestions.map((item) => {
+                      const isSelected =
+                        item.question === selectedQuestion.question &&
+                        selectedQuestion.source === "personalized";
+
+                      return (
+                        <button
+                          key={`${item.category}-${item.question}`}
+                          type="button"
+                          onClick={() =>
+                            setSelectedQuestion({
+                              category: item.category,
+                              question: item.question,
+                              source: "personalized",
+                            })
+                          }
+                          className={[
+                            "w-full rounded-[22px] border px-4 py-4 text-left transition-all",
+                            isSelected
+                              ? "border-primary/25 bg-primary/8 shadow-[0_16px_40px_-28px_rgba(79,104,184,0.5)] dark:border-primary/30 dark:bg-primary/12"
+                              : "border-border/70 bg-background/55 hover:border-primary/20 hover:bg-background/75 dark:bg-card/40 dark:hover:bg-card/62",
+                          ].join(" ")}
+                        >
+                          <p className="metric-label">{item.category}</p>
+                          <p className="mt-2 text-sm leading-7 text-foreground">{item.question}</p>
+                          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                            {item.rationale}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
             </CardContent>
           </Card>
@@ -889,13 +1007,20 @@ function SessionWorkspace({
 export function PracticeWorkspace({
   isOpenAIConfigured,
   isSupabaseConfigured,
+  hasExperienceProfile = false,
   sessions = [],
   initialSession = null,
 }: PracticeWorkspaceProps) {
   const isConfigured = isOpenAIConfigured && isSupabaseConfigured;
 
   if (initialSession) {
-    return <SessionWorkspace session={initialSession} isConfigured={isConfigured} />;
+    return (
+      <SessionWorkspace
+        session={initialSession}
+        isConfigured={isConfigured}
+        hasExperienceProfile={hasExperienceProfile}
+      />
+    );
   }
 
   return <SessionHub isConfigured={isConfigured} sessions={sessions} />;

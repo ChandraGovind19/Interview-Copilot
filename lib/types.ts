@@ -27,6 +27,12 @@ export interface ExperienceProfile {
   updatedAt: string;
 }
 
+export interface PersonalizedQuestion {
+  category: string;
+  question: string;
+  rationale: string;
+}
+
 export interface SessionAnswerHistory {
   id: string;
   question: string;

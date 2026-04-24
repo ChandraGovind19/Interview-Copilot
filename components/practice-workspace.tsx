@@ -28,6 +28,11 @@ interface PracticeWorkspaceProps {
   initialSession?: SessionDetail | null;
 }
 
+interface PracticeQuestion {
+  category: string;
+  question: string;
+}
+
 function formatSessionDate(value: string) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -374,7 +379,7 @@ function SessionWorkspace({
     title: session.title,
     jobRole: session.jobRole ?? "",
   });
-  const [selectedQuestion, setSelectedQuestion] = useState(() => {
+  const [selectedQuestion, setSelectedQuestion] = useState<PracticeQuestion>(() => {
     const matchingQuestion = QUESTION_BANK.find(
       (item) => item.question === session.answers[0]?.question,
     );
@@ -383,8 +388,17 @@ function SessionWorkspace({
       return matchingQuestion;
     }
 
-    return QUESTION_BANK[0];
+    if (session.answers[0]?.question) {
+      return {
+        category: session.answers[0].questionCategory ?? "Custom question",
+        question: session.answers[0].question,
+      };
+    }
+
+    return { ...QUESTION_BANK[0] };
   });
+  const [customQuestionCategory, setCustomQuestionCategory] = useState("Custom question");
+  const [customQuestionText, setCustomQuestionText] = useState("");
   const [answerText, setAnswerText] = useState("");
   const [feedback, setFeedback] = useState<FeedbackRow | null>(session.answers[0]?.feedback ?? null);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
@@ -413,6 +427,12 @@ function SessionWorkspace({
     return Math.round(scores.reduce((total, score) => total + score, 0) / scores.length);
   }, [answerHistory]);
 
+  const selectedQuestionSource = useMemo(() => {
+    return QUESTION_BANK.some((item) => item.question === selectedQuestion.question)
+      ? "Question bank"
+      : "Custom question";
+  }, [selectedQuestion]);
+
   function reuseQuestion(question: string, category: string | null) {
     const matchingQuestion = QUESTION_BANK.find((item) => item.question === question);
 
@@ -424,6 +444,22 @@ function SessionWorkspace({
         question,
       });
     }
+
+    scrollToSection(answerEditorRef.current);
+  }
+
+  function useCustomQuestion() {
+    setError(null);
+
+    if (!customQuestionText.trim()) {
+      setError("Add a custom question before selecting it.");
+      return;
+    }
+
+    setSelectedQuestion({
+      category: customQuestionCategory.trim() || "Custom question",
+      question: customQuestionText.trim(),
+    });
 
     scrollToSection(answerEditorRef.current);
   }
@@ -651,10 +687,11 @@ function SessionWorkspace({
             <CardHeader>
               <CardTitle>Question bank</CardTitle>
               <CardDescription>
-                Select a prompt for the next answer, or reuse one from the session history below.
+                Select a prompt for the next answer, or write your own if you want to practice a
+                real interview question.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-6">
               {QUESTION_BANK.map((item) => {
                 const isSelected = item.question === selectedQuestion.question;
 
@@ -675,6 +712,55 @@ function SessionWorkspace({
                   </button>
                 );
               })}
+
+              <div className="space-y-4 rounded-[24px] border border-border/70 bg-background/55 p-4 dark:bg-card/45">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">Custom question</p>
+                  <p className="text-sm leading-7 text-muted-foreground">
+                    Paste a real prompt from a recruiter, application portal, or interview guide.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    className="text-sm font-semibold text-foreground"
+                    htmlFor="custom-question-category"
+                  >
+                    Label
+                  </label>
+                  <Input
+                    id="custom-question-category"
+                    value={customQuestionCategory}
+                    onChange={(event) => setCustomQuestionCategory(event.target.value)}
+                    placeholder="Custom question"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    className="text-sm font-semibold text-foreground"
+                    htmlFor="custom-question-text"
+                  >
+                    Question text
+                  </label>
+                  <Textarea
+                    id="custom-question-text"
+                    rows={5}
+                    value={customQuestionText}
+                    onChange={(event) => setCustomQuestionText(event.target.value)}
+                    placeholder="Paste your custom interview question here..."
+                    className="bg-white/70"
+                  />
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="border-border/80 bg-background/80 shadow-sm hover:border-primary/30 dark:border-border dark:bg-background/20"
+                  onClick={useCustomQuestion}
+                >
+                  Use custom question
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </aside>
@@ -683,12 +769,15 @@ function SessionWorkspace({
           <div ref={answerEditorRef}>
             <Card className="surface-soft border-border/70 shadow-none">
               <CardHeader>
-                <CardTitle className="text-4xl leading-tight text-foreground">
-                  {selectedQuestion.question}
+              <CardTitle className="text-4xl leading-tight text-foreground">
+                {selectedQuestion.question}
               </CardTitle>
               <CardDescription>
-                Write in first person. A stronger answer names the stakes, your direct actions,
-                and a result that sounds measurable instead of generic.
+                <span className="font-medium text-foreground">{selectedQuestionSource}</span>
+                {" · "}
+                {selectedQuestion.category}
+                {" · "}Write in first person. A stronger answer names the stakes, your direct
+                actions, and a result that sounds measurable instead of generic.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">

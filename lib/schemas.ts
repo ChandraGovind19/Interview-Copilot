@@ -10,6 +10,16 @@ export const updateSessionSchema = z.object({
   jobRole: z.string().trim().max(160).optional(),
 });
 
+export const experienceProfileSchema = z.object({
+  title: z.string().trim().min(3, "Profile title is too short.").max(120),
+  targetRole: z.string().trim().max(160).optional(),
+  sourceText: z
+    .string()
+    .trim()
+    .min(120, "Add more experience detail so the profile is useful.")
+    .max(12000, "Experience profile is too long."),
+});
+
 export const feedbackRequestSchema = z.object({
   sessionId: z.string().uuid("Session id must be a valid UUID."),
   question: z.string().trim().min(10),

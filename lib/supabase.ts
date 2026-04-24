@@ -1,7 +1,22 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { getRequiredEnv } from "@/lib/env";
-import type { DashboardSnapshot, FeedbackRow, SessionDetail, SessionSummary } from "@/lib/types";
+import type {
+  DashboardSnapshot,
+  ExperienceProfile,
+  FeedbackRow,
+  SessionDetail,
+  SessionSummary,
+} from "@/lib/types";
+
+interface ExperienceProfileRecord {
+  id: string;
+  title: string;
+  target_role: string | null;
+  source_text: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface SessionFeedbackScoreRecord {
   id: string;
@@ -62,6 +77,17 @@ function mapFeedbackRow(row: SessionFeedbackScoreRecord): FeedbackRow {
   };
 }
 
+function mapExperienceProfile(row: ExperienceProfileRecord): ExperienceProfile {
+  return {
+    id: row.id,
+    title: row.title,
+    targetRole: row.target_role,
+    sourceText: row.source_text,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export function createSupabaseAdminClient() {
   return createClient(
     getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL"),
@@ -73,6 +99,62 @@ export function createSupabaseAdminClient() {
       },
     },
   );
+}
+
+export async function getExperienceProfileForUser(
+  userId: string,
+): Promise<ExperienceProfile | null> {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("experience_profiles")
+    .select("id, title, target_role, source_text, created_at, updated_at")
+    .eq("clerk_user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ? mapExperienceProfile(data as ExperienceProfileRecord) : null;
+}
+
+export async function upsertExperienceProfileForUser(
+  userId: string,
+  profile: { title: string; targetRole?: string; sourceText: string },
+): Promise<ExperienceProfile> {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("experience_profiles")
+    .upsert(
+      {
+        clerk_user_id: userId,
+        title: profile.title,
+        target_role: profile.targetRole?.trim() ? profile.targetRole.trim() : null,
+        source_text: profile.sourceText,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "clerk_user_id" },
+    )
+    .select("id, title, target_role, source_text, created_at, updated_at")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapExperienceProfile(data as ExperienceProfileRecord);
+}
+
+export async function deleteExperienceProfileForUser(userId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("experience_profiles")
+    .delete()
+    .eq("clerk_user_id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function getSessionForUser(sessionId: string, userId: string) {

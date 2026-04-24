@@ -1,11 +1,12 @@
 import { currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 
+import { ExperienceProfileCard } from "@/components/experience-profile-card";
 import { SessionHistoryList } from "@/components/session-history-list";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasSupabaseEnv } from "@/lib/env";
-import { getDashboardSnapshot } from "@/lib/supabase";
+import { getDashboardSnapshot, getExperienceProfileForUser } from "@/lib/supabase";
 
 const statConfig = [
   { key: "totalSessions", label: "Sessions created" },
@@ -17,6 +18,8 @@ export default async function DashboardPage() {
   const user = await currentUser();
   const userId = user?.id;
   const dashboard = userId && hasSupabaseEnv() ? await getDashboardSnapshot(userId) : null;
+  const experienceProfile =
+    userId && hasSupabaseEnv() ? await getExperienceProfileForUser(userId) : null;
   const displayName = user?.firstName ?? user?.username ?? "there";
 
   const stats = {
@@ -81,6 +84,11 @@ export default async function DashboardPage() {
       ) : null}
 
       <SessionHistoryList sessions={dashboard?.sessions ?? []} />
+
+      <ExperienceProfileCard
+        initialProfile={experienceProfile}
+        isSupabaseConfigured={hasSupabaseEnv()}
+      />
     </main>
   );
 }

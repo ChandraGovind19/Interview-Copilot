@@ -18,6 +18,15 @@ export interface FeedbackRow {
   keywordsMissing: string[];
 }
 
+export interface ExperienceProfile {
+  id: string;
+  title: string;
+  targetRole: string | null;
+  sourceText: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SessionAnswerHistory {
   id: string;
   question: string;

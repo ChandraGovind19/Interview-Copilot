@@ -384,7 +384,7 @@ function SessionWorkspace({
     title: session.title,
     jobRole: session.jobRole ?? "",
   });
-  const [selectedQuestion, setSelectedQuestion] = useState<PracticeQuestion>(() => {
+  const initialQuestion = useMemo<PracticeQuestion>(() => {
     const matchingQuestion = QUESTION_BANK.find(
       (item) => item.question === session.answers[0]?.question,
     );
@@ -402,7 +402,12 @@ function SessionWorkspace({
     }
 
     return { ...QUESTION_BANK[0], source: "bank" };
-  });
+  }, [session.answers]);
+  const [selectedQuestion, setSelectedQuestion] = useState<PracticeQuestion>(initialQuestion);
+  const [pickerQuestion, setPickerQuestion] = useState<PracticeQuestion>(initialQuestion);
+  const [activeQuestionTab, setActiveQuestionTab] = useState<"bank" | "personalized" | "custom">(
+    initialQuestion.source === "personalized" ? "personalized" : initialQuestion.source === "custom" ? "custom" : "bank",
+  );
   const [customQuestionCategory, setCustomQuestionCategory] = useState("Custom question");
   const [customQuestionText, setCustomQuestionText] = useState("");
   const [personalizedQuestions, setPersonalizedQuestions] = useState<PersonalizedQuestion[]>([]);
@@ -444,19 +449,41 @@ function SessionWorkspace({
         : "Custom question";
   }, [selectedQuestion]);
 
+  const pickerQuestionSource = useMemo(() => {
+    return pickerQuestion.source === "bank"
+      ? "Question bank"
+      : pickerQuestion.source === "personalized"
+        ? "Personalized"
+        : "Custom question";
+  }, [pickerQuestion]);
+
   function reuseQuestion(question: string, category: string | null) {
     const matchingQuestion = QUESTION_BANK.find((item) => item.question === question);
 
     if (matchingQuestion) {
-      setSelectedQuestion({ ...matchingQuestion, source: "bank" });
+      const nextQuestion = { ...matchingQuestion, source: "bank" as const };
+      setSelectedQuestion(nextQuestion);
+      setPickerQuestion(nextQuestion);
+      setActiveQuestionTab("bank");
     } else {
-      setSelectedQuestion({
+      const nextQuestion = {
         category: category ?? "Practice",
         question,
         source: "custom",
-      });
+      } as const;
+      setSelectedQuestion(nextQuestion);
+      setPickerQuestion(nextQuestion);
+      setActiveQuestionTab("custom");
+      setCustomQuestionCategory(category ?? "Custom question");
+      setCustomQuestionText(question);
     }
 
+    scrollToSection(answerEditorRef.current);
+  }
+
+  function applyPickedQuestion() {
+    setSelectedQuestion(pickerQuestion);
+    setError(null);
     scrollToSection(answerEditorRef.current);
   }
 
@@ -468,11 +495,14 @@ function SessionWorkspace({
       return;
     }
 
-    setSelectedQuestion({
+    const nextQuestion = {
       category: customQuestionCategory.trim() || "Custom question",
       question: customQuestionText.trim(),
       source: "custom",
-    });
+    } as const;
+
+    setPickerQuestion(nextQuestion);
+    setSelectedQuestion(nextQuestion);
 
     scrollToSection(answerEditorRef.current);
   }
@@ -499,11 +529,12 @@ function SessionWorkspace({
       setPersonalizedQuestions(data.questions);
 
       if (data.questions[0]) {
-        setSelectedQuestion({
+        setPickerQuestion({
           category: data.questions[0].category,
           question: data.questions[0].question,
           source: "personalized",
         });
+        setActiveQuestionTab("personalized");
       }
     } catch (generationError) {
       setPersonalizedError(
@@ -734,156 +765,229 @@ function SessionWorkspace({
               </div>
             </CardContent>
           </Card>
-
-          <Card className="surface-soft border-border/70 shadow-none">
-            <CardHeader>
-              <CardTitle>Question bank</CardTitle>
-              <CardDescription>
-                Select a prompt for the next answer, or write your own if you want to practice a
-                real interview question.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {QUESTION_BANK.map((item) => {
-                const isSelected = item.question === selectedQuestion.question;
-
-                return (
-                  <button
-                    key={item.question}
-                    type="button"
-                    onClick={() => setSelectedQuestion({ ...item, source: "bank" })}
-                    className={[
-                      "w-full rounded-[22px] border px-4 py-4 text-left transition-all",
-                      isSelected
-                        ? "border-primary/25 bg-primary/8 shadow-[0_16px_40px_-28px_rgba(79,104,184,0.5)] dark:border-primary/30 dark:bg-primary/12"
-                        : "border-border/70 bg-background/55 hover:border-primary/20 hover:bg-background/75 dark:bg-card/40 dark:hover:bg-card/62",
-                    ].join(" ")}
-                  >
-                    <p className="metric-label">{item.category}</p>
-                    <p className="mt-2 text-sm leading-7 text-foreground">{item.question}</p>
-                  </button>
-                );
-              })}
-
-              <div className="space-y-4 rounded-[24px] border border-border/70 bg-background/55 p-4 dark:bg-card/45">
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-foreground">Custom question</p>
-                  <p className="text-sm leading-7 text-muted-foreground">
-                    Paste a real prompt from a recruiter, application portal, or interview guide.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <label
-                    className="text-sm font-semibold text-foreground"
-                    htmlFor="custom-question-category"
-                  >
-                    Label
-                  </label>
-                  <Input
-                    id="custom-question-category"
-                    value={customQuestionCategory}
-                    onChange={(event) => setCustomQuestionCategory(event.target.value)}
-                    placeholder="Custom question"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label
-                    className="text-sm font-semibold text-foreground"
-                    htmlFor="custom-question-text"
-                  >
-                    Question text
-                  </label>
-                  <Textarea
-                    id="custom-question-text"
-                    rows={5}
-                    value={customQuestionText}
-                    onChange={(event) => setCustomQuestionText(event.target.value)}
-                    placeholder="Paste your custom interview question here..."
-                    className="bg-white/70"
-                  />
-                </div>
-
-                <Button
-                  variant="outline"
-                  className="border-border/80 bg-background/80 shadow-sm hover:border-primary/30 dark:border-border dark:bg-background/20"
-                  onClick={useCustomQuestion}
-                >
-                  Use custom question
-                </Button>
-              </div>
-
-              <div className="space-y-4 rounded-[24px] border border-border/70 bg-background/55 p-4 dark:bg-card/45">
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-foreground">Personalized questions</p>
-                  <p className="text-sm leading-7 text-muted-foreground">
-                    Generate interview questions from the saved experience profile and the active
-                    role.
-                  </p>
-                </div>
-
-                <Button
-                  variant="outline"
-                  className="border-border/80 bg-background/80 shadow-sm hover:border-primary/30 dark:border-border dark:bg-background/20"
-                  onClick={handleGeneratePersonalizedQuestions}
-                  disabled={personalizedLoading || !isConfigured || !hasExperienceProfile}
-                >
-                  {personalizedLoading ? "Generating questions..." : "Generate personalized questions"}
-                </Button>
-
-                {!hasExperienceProfile ? (
-                  <p className="text-sm leading-7 text-muted-foreground">
-                    Save an experience profile on the dashboard first to unlock personalized
-                    questions.
-                  </p>
-                ) : null}
-
-                {personalizedError ? (
-                  <p className="text-sm leading-7 text-red-700">{personalizedError}</p>
-                ) : null}
-
-                {personalizedQuestions.length ? (
-                  <div className="space-y-3">
-                    {personalizedQuestions.map((item) => {
-                      const isSelected =
-                        item.question === selectedQuestion.question &&
-                        selectedQuestion.source === "personalized";
-
-                      return (
-                        <button
-                          key={`${item.category}-${item.question}`}
-                          type="button"
-                          onClick={() =>
-                            setSelectedQuestion({
-                              category: item.category,
-                              question: item.question,
-                              source: "personalized",
-                            })
-                          }
-                          className={[
-                            "w-full rounded-[22px] border px-4 py-4 text-left transition-all",
-                            isSelected
-                              ? "border-primary/25 bg-primary/8 shadow-[0_16px_40px_-28px_rgba(79,104,184,0.5)] dark:border-primary/30 dark:bg-primary/12"
-                              : "border-border/70 bg-background/55 hover:border-primary/20 hover:bg-background/75 dark:bg-card/40 dark:hover:bg-card/62",
-                          ].join(" ")}
-                        >
-                          <p className="metric-label">{item.category}</p>
-                          <p className="mt-2 text-sm leading-7 text-foreground">{item.question}</p>
-                          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                            {item.rationale}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
         </aside>
 
         <section className="space-y-6">
+          <Card className="surface-soft border-border/70 shadow-none">
+            <CardHeader>
+              <CardTitle>Question picker</CardTitle>
+              <CardDescription>
+                Switch between question sources without growing the page. Pick a source, review a
+                question, then load it into the answer workspace.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: "bank", label: "Bank" },
+                  { key: "personalized", label: "Personalized" },
+                  { key: "custom", label: "Custom" },
+                ].map((tab) => (
+                  <Button
+                    key={tab.key}
+                    type="button"
+                    variant={activeQuestionTab === tab.key ? "default" : "outline"}
+                    className={
+                      activeQuestionTab !== tab.key
+                        ? "border-border/80 bg-background/80 shadow-sm hover:border-primary/30 dark:border-border dark:bg-background/20"
+                        : undefined
+                    }
+                    onClick={() =>
+                      setActiveQuestionTab(tab.key as "bank" | "personalized" | "custom")
+                    }
+                  >
+                    {tab.label}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+                <div className="rounded-[24px] border border-border/70 bg-background/55 p-4 dark:bg-card/45">
+                  {activeQuestionTab === "bank" ? (
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">Question bank</p>
+                        <p className="text-sm leading-7 text-muted-foreground">
+                          Use a compact list instead of a long sidebar stack.
+                        </p>
+                      </div>
+                      <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                        {QUESTION_BANK.map((item) => {
+                          const isActive =
+                            pickerQuestion.question === item.question && pickerQuestion.source === "bank";
+
+                          return (
+                            <button
+                              key={item.question}
+                              type="button"
+                              onClick={() =>
+                                setPickerQuestion({ ...item, source: "bank" as const })
+                              }
+                              className={[
+                                "w-full rounded-[20px] border px-3 py-3 text-left transition-all",
+                                isActive
+                                  ? "border-primary/25 bg-primary/8 dark:border-primary/30 dark:bg-primary/12"
+                                  : "border-border/70 bg-background/75 hover:border-primary/20 hover:bg-background dark:bg-card/40 dark:hover:bg-card/62",
+                              ].join(" ")}
+                            >
+                              <p className="metric-label">{item.category}</p>
+                              <p className="mt-1 text-sm leading-6 text-foreground">{item.question}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {activeQuestionTab === "personalized" ? (
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">Personalized questions</p>
+                        <p className="text-sm leading-7 text-muted-foreground">
+                          Generate questions from the saved experience profile and current role.
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="border-border/80 bg-background/80 shadow-sm hover:border-primary/30 dark:border-border dark:bg-background/20"
+                        onClick={handleGeneratePersonalizedQuestions}
+                        disabled={personalizedLoading || !isConfigured || !hasExperienceProfile}
+                      >
+                        {personalizedLoading ? "Generating questions..." : "Generate personalized questions"}
+                      </Button>
+                      {!hasExperienceProfile ? (
+                        <p className="text-sm leading-7 text-muted-foreground">
+                          Save an experience profile on the dashboard first to unlock personalized
+                          questions.
+                        </p>
+                      ) : null}
+                      {personalizedError ? (
+                        <p className="text-sm leading-7 text-red-700">{personalizedError}</p>
+                      ) : null}
+                      <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                        {personalizedQuestions.length ? (
+                          personalizedQuestions.map((item) => {
+                            const isActive =
+                              pickerQuestion.question === item.question &&
+                              pickerQuestion.source === "personalized";
+
+                            return (
+                              <button
+                                key={`${item.category}-${item.question}`}
+                                type="button"
+                                onClick={() =>
+                                  setPickerQuestion({
+                                    category: item.category,
+                                    question: item.question,
+                                    source: "personalized",
+                                  })
+                                }
+                                className={[
+                                  "w-full rounded-[20px] border px-3 py-3 text-left transition-all",
+                                  isActive
+                                    ? "border-primary/25 bg-primary/8 dark:border-primary/30 dark:bg-primary/12"
+                                    : "border-border/70 bg-background/75 hover:border-primary/20 hover:bg-background dark:bg-card/40 dark:hover:bg-card/62",
+                                ].join(" ")}
+                              >
+                                <p className="metric-label">{item.category}</p>
+                                <p className="mt-1 text-sm leading-6 text-foreground">{item.question}</p>
+                                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                  {item.rationale}
+                                </p>
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <p className="text-sm leading-7 text-muted-foreground">
+                            Generate a set of questions to start browsing here.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {activeQuestionTab === "custom" ? (
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">Custom question</p>
+                        <p className="text-sm leading-7 text-muted-foreground">
+                          Paste a real prompt from a recruiter, application portal, or interview
+                          guide.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <label
+                          className="text-sm font-semibold text-foreground"
+                          htmlFor="custom-question-category"
+                        >
+                          Label
+                        </label>
+                        <Input
+                          id="custom-question-category"
+                          value={customQuestionCategory}
+                          onChange={(event) => setCustomQuestionCategory(event.target.value)}
+                          placeholder="Custom question"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label
+                          className="text-sm font-semibold text-foreground"
+                          htmlFor="custom-question-text"
+                        >
+                          Question text
+                        </label>
+                        <Textarea
+                          id="custom-question-text"
+                          rows={7}
+                          value={customQuestionText}
+                          onChange={(event) => setCustomQuestionText(event.target.value)}
+                          placeholder="Paste your custom interview question here..."
+                          className="bg-white/70"
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="border-border/80 bg-background/80 shadow-sm hover:border-primary/30 dark:border-border dark:bg-background/20"
+                        onClick={useCustomQuestion}
+                      >
+                        Use custom question
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="rounded-[24px] border border-border/70 bg-background/55 p-5 dark:bg-card/45">
+                  <p className="metric-label">Question preview</p>
+                  <p className="mt-3 text-sm font-semibold text-foreground">{pickerQuestionSource}</p>
+                  <p className="mt-1 text-sm leading-7 text-muted-foreground">
+                    {pickerQuestion.category}
+                  </p>
+                  <p className="mt-4 text-lg font-semibold leading-8 text-foreground">
+                    {pickerQuestion.question}
+                  </p>
+                  {activeQuestionTab === "personalized" ? (
+                    <p className="mt-4 text-sm leading-7 text-muted-foreground">
+                      {
+                        personalizedQuestions.find((item) => item.question === pickerQuestion.question)
+                          ?.rationale
+                      }
+                    </p>
+                  ) : null}
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <Button onClick={applyPickedQuestion}>Use this question</Button>
+                    <Button
+                      variant="outline"
+                      className="border-border/80 bg-background/80 shadow-sm hover:border-primary/30 dark:border-border dark:bg-background/20"
+                      onClick={() => scrollToSection(answerEditorRef.current)}
+                    >
+                      Jump to answer box
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div ref={answerEditorRef}>
             <Card className="surface-soft border-border/70 shadow-none">
               <CardHeader>

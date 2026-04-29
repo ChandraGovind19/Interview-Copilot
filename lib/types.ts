@@ -33,6 +33,12 @@ export interface PersonalizedQuestion {
   rationale: string;
 }
 
+export interface FollowUpQuestion {
+  category: string;
+  question: string;
+  rationale: string;
+}
+
 export interface SessionAnswerHistory {
   id: string;
   question: string;

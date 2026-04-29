@@ -3,8 +3,10 @@ import { zodTextFormat } from "openai/helpers/zod";
 
 import { DEFAULT_OPENAI_MODEL, getRequiredEnv } from "@/lib/env";
 import {
+  followUpQuestionListSchema,
   personalizedQuestionListSchema,
   starFeedbackSchema,
+  type FollowUpQuestionList,
   type PersonalizedQuestionList,
   type STARFeedback,
 } from "@/lib/schemas";
@@ -88,6 +90,47 @@ export async function generatePersonalizedQuestions(
 
   if (!response.output_parsed) {
     throw new Error("OpenAI did not return personalized questions.");
+  }
+
+  return response.output_parsed;
+}
+
+export async function generateFollowUpQuestions(
+  originalQuestion: string,
+  candidateAnswer: string,
+  profileText?: string,
+  profileRole?: string,
+  sessionRole?: string,
+): Promise<FollowUpQuestionList> {
+  const response = await getClient().responses.parse({
+    model: DEFAULT_OPENAI_MODEL,
+    instructions: [
+      "You are an expert interviewer running a behavioral interview.",
+      "Generate concise, realistic follow-up questions based on the candidate's answer.",
+      "The questions should probe for missing detail, sharper ownership, clearer metrics, tradeoffs, or stronger reflection.",
+      "Avoid generic repetition of the original prompt.",
+      "Return only 2 or 3 strong follow-up options, not a long list.",
+      profileRole ? `The saved target role is ${profileRole}.` : "",
+      sessionRole ? `The active session target role is ${sessionRole}.` : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    input: [
+      `Original interview question: ${originalQuestion}`,
+      `Candidate answer: ${candidateAnswer}`,
+      profileText ? `Candidate background context:\n${profileText}` : "",
+      "",
+      "Return a small set of follow-up questions. Each item must include a category, the follow-up question text, and a short rationale.",
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
+    text: {
+      format: zodTextFormat(followUpQuestionListSchema, "follow_up_questions"),
+    },
+  });
+
+  if (!response.output_parsed) {
+    throw new Error("OpenAI did not return follow-up questions.");
   }
 
   return response.output_parsed;

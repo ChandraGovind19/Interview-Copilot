@@ -16,6 +16,7 @@ import { QUESTION_BANK } from "@/lib/question-bank";
 import type {
   ApiFeedbackResponse,
   FeedbackRow,
+  FollowUpQuestion,
   PersonalizedQuestion,
   SessionAnswerHistory,
   SessionDetail,
@@ -33,7 +34,7 @@ interface PracticeWorkspaceProps {
 interface PracticeQuestion {
   category: string;
   question: string;
-  source: "bank" | "custom" | "personalized";
+  source: "bank" | "custom" | "personalized" | "followup";
 }
 
 function formatSessionDate(value: string) {
@@ -413,6 +414,9 @@ function SessionWorkspace({
   const [personalizedQuestions, setPersonalizedQuestions] = useState<PersonalizedQuestion[]>([]);
   const [personalizedLoading, setPersonalizedLoading] = useState(false);
   const [personalizedError, setPersonalizedError] = useState<string | null>(null);
+  const [followUpQuestions, setFollowUpQuestions] = useState<FollowUpQuestion[]>([]);
+  const [followUpLoading, setFollowUpLoading] = useState(false);
+  const [followUpError, setFollowUpError] = useState<string | null>(null);
   const [answerText, setAnswerText] = useState("");
   const [feedback, setFeedback] = useState<FeedbackRow | null>(session.answers[0]?.feedback ?? null);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
@@ -446,6 +450,8 @@ function SessionWorkspace({
       ? "Question bank"
       : selectedQuestion.source === "personalized"
         ? "Personalized"
+        : selectedQuestion.source === "followup"
+          ? "Follow-up"
         : "Custom question";
   }, [selectedQuestion]);
 
@@ -454,6 +460,8 @@ function SessionWorkspace({
       ? "Question bank"
       : pickerQuestion.source === "personalized"
         ? "Personalized"
+        : pickerQuestion.source === "followup"
+          ? "Follow-up"
         : "Custom question";
   }, [pickerQuestion]);
 
@@ -545,6 +553,60 @@ function SessionWorkspace({
     } finally {
       setPersonalizedLoading(false);
     }
+  }
+
+  async function handleGenerateFollowUps() {
+    setFollowUpError(null);
+
+    const latestAnswer = answerHistory[0];
+
+    if (!latestAnswer) {
+      setFollowUpError("Submit one answer first so the app has context for a follow-up.");
+      return;
+    }
+
+    setFollowUpLoading(true);
+
+    try {
+      const response = await fetch("/api/questions/follow-up", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: latestAnswer.question,
+          answerText: latestAnswer.answerText,
+          sessionRole: sessionMeta.jobRole.trim() || undefined,
+        }),
+      });
+
+      const data = (await response.json()) as { questions?: FollowUpQuestion[]; error?: string };
+
+      if (!response.ok || !data.questions) {
+        throw new Error(data.error ?? "Unable to generate follow-up questions.");
+      }
+
+      setFollowUpQuestions(data.questions);
+    } catch (generationError) {
+      setFollowUpError(
+        generationError instanceof Error
+          ? generationError.message
+          : "Unable to generate follow-up questions.",
+      );
+    } finally {
+      setFollowUpLoading(false);
+    }
+  }
+
+  function applyFollowUpQuestion(item: FollowUpQuestion) {
+    const nextQuestion = {
+      category: item.category,
+      question: item.question,
+      source: "followup" as const,
+    };
+
+    setPickerQuestion(nextQuestion);
+    setSelectedQuestion(nextQuestion);
+    setError(null);
+    scrollToSection(answerEditorRef.current);
   }
 
   function reviewFeedback(nextFeedback: FeedbackRow | null) {
@@ -658,6 +720,8 @@ function SessionWorkspace({
 
       setFeedback(data.feedback);
       setAnswerHistory((current) => [newHistoryItem, ...current]);
+      setFollowUpQuestions([]);
+      setFollowUpError(null);
       setAnswerText("");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to generate feedback.");
@@ -1060,6 +1124,57 @@ function SessionWorkspace({
             <div ref={feedbackPanelRef}>
               <FeedbackCard feedback={feedback} />
             </div>
+          ) : null}
+
+          {feedback ? (
+            <Card className="surface-soft border-border/70 shadow-none">
+              <CardHeader>
+                <CardTitle>Follow-up interviewer mode</CardTitle>
+                <CardDescription>
+                  Generate a small set of realistic follow-up questions without turning the page
+                  into another long question stack.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button onClick={handleGenerateFollowUps} disabled={followUpLoading || !isConfigured}>
+                    {followUpLoading ? "Generating follow-ups..." : "Generate follow-up questions"}
+                  </Button>
+                </div>
+
+                {followUpError ? (
+                  <p className="text-sm leading-7 text-red-700">{followUpError}</p>
+                ) : null}
+
+                {followUpQuestions.length ? (
+                  <div className="grid gap-3">
+                    {followUpQuestions.map((item) => (
+                      <div
+                        key={`${item.category}-${item.question}`}
+                        className="rounded-[22px] border border-border/70 bg-background/60 p-4 dark:bg-card/45"
+                      >
+                        <p className="metric-label">{item.category}</p>
+                        <p className="mt-2 text-sm font-semibold leading-7 text-foreground">
+                          {item.question}
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                          {item.rationale}
+                        </p>
+                        <div className="mt-4">
+                          <Button
+                            variant="outline"
+                            className="border-border/80 bg-background/80 shadow-sm hover:border-primary/30 dark:border-border dark:bg-background/20"
+                            onClick={() => applyFollowUpQuestion(item)}
+                          >
+                            Use follow-up
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
           ) : null}
 
           <SessionHistory

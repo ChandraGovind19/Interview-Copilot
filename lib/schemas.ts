@@ -30,6 +30,16 @@ export const personalizedQuestionListSchema = z.object({
   questions: z.array(personalizedQuestionSchema).min(6).max(12),
 });
 
+export const followUpQuestionSchema = z.object({
+  category: z.string().trim().min(2).max(60),
+  question: z.string().trim().min(10).max(300),
+  rationale: z.string().trim().min(10).max(220),
+});
+
+export const followUpQuestionListSchema = z.object({
+  questions: z.array(followUpQuestionSchema).min(1).max(3),
+});
+
 export const feedbackRequestSchema = z.object({
   sessionId: z.string().uuid("Session id must be a valid UUID."),
   question: z.string().trim().min(10),
@@ -70,3 +80,4 @@ export const starFeedbackSchema = z.object({
 
 export type STARFeedback = z.infer<typeof starFeedbackSchema>;
 export type PersonalizedQuestionList = z.infer<typeof personalizedQuestionListSchema>;
+export type FollowUpQuestionList = z.infer<typeof followUpQuestionListSchema>;

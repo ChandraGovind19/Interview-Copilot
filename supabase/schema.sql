@@ -43,6 +43,13 @@ create table if not exists feedback (
   action_feedback text,
   result_feedback text,
   overall_summary text,
+  revised_situation_score int check (revised_situation_score between 1 and 10),
+  revised_task_score int check (revised_task_score between 1 and 10),
+  revised_action_score int check (revised_action_score between 1 and 10),
+  revised_result_score int check (revised_result_score between 1 and 10),
+  revised_overall_score int check (revised_overall_score between 1 and 10),
+  revised_overall_summary text,
+  improvement_summary text,
   strengths text[] default '{}',
   weaknesses text[] default '{}',
   improved_answer text,
@@ -50,6 +57,14 @@ create table if not exists feedback (
   keywords_missing text[] default '{}',
   created_at timestamptz not null default now()
 );
+
+alter table feedback add column if not exists revised_situation_score int check (revised_situation_score between 1 and 10);
+alter table feedback add column if not exists revised_task_score int check (revised_task_score between 1 and 10);
+alter table feedback add column if not exists revised_action_score int check (revised_action_score between 1 and 10);
+alter table feedback add column if not exists revised_result_score int check (revised_result_score between 1 and 10);
+alter table feedback add column if not exists revised_overall_score int check (revised_overall_score between 1 and 10);
+alter table feedback add column if not exists revised_overall_summary text;
+alter table feedback add column if not exists improvement_summary text;
 
 create index if not exists idx_experience_profiles_user on experience_profiles(clerk_user_id);
 create index if not exists idx_sessions_user on sessions(clerk_user_id);

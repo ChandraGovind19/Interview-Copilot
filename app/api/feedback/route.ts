@@ -15,11 +15,18 @@ interface FeedbackRowRecord {
   action_score: number;
   result_score: number;
   overall_score: number;
+  revised_situation_score: number;
+  revised_task_score: number;
+  revised_action_score: number;
+  revised_result_score: number;
+  revised_overall_score: number;
   situation_feedback: string;
   task_feedback: string;
   action_feedback: string;
   result_feedback: string;
   overall_summary: string;
+  revised_overall_summary: string;
+  improvement_summary: string;
   strengths: string[] | null;
   weaknesses: string[] | null;
   improved_answer: string;
@@ -36,11 +43,18 @@ function mapFeedbackRow(row: FeedbackRowRecord): FeedbackRow {
     actionScore: row.action_score,
     resultScore: row.result_score,
     overallScore: row.overall_score,
+    revisedSituationScore: row.revised_situation_score,
+    revisedTaskScore: row.revised_task_score,
+    revisedActionScore: row.revised_action_score,
+    revisedResultScore: row.revised_result_score,
+    revisedOverallScore: row.revised_overall_score,
     situationFeedback: row.situation_feedback,
     taskFeedback: row.task_feedback,
     actionFeedback: row.action_feedback,
     resultFeedback: row.result_feedback,
     overallSummary: row.overall_summary,
+    revisedOverallSummary: row.revised_overall_summary,
+    improvementSummary: row.improvement_summary,
     strengths: row.strengths ?? [],
     weaknesses: row.weaknesses ?? [],
     improvedAnswer: row.improved_answer,
@@ -123,21 +137,28 @@ export async function POST(request: NextRequest) {
       .insert({
         answer_id: insertedAnswer.id,
         clerk_user_id: userId,
-        situation_score: starFeedback.situation.score,
-        task_score: starFeedback.task.score,
-        action_score: starFeedback.action.score,
-        result_score: starFeedback.result.score,
-        overall_score: starFeedback.overall.score,
-        situation_feedback: starFeedback.situation.feedback,
-        task_feedback: starFeedback.task.feedback,
-        action_feedback: starFeedback.action.feedback,
-        result_feedback: starFeedback.result.feedback,
-        overall_summary: starFeedback.overall.summary,
-        strengths: starFeedback.overall.strengths,
-        weaknesses: starFeedback.overall.weaknesses,
-        improved_answer: starFeedback.overall.improvedAnswer,
-        keywords_used: starFeedback.overall.keywordsUsed,
-        keywords_missing: starFeedback.overall.keywordsMissing,
+        situation_score: starFeedback.original.situation.score,
+        task_score: starFeedback.original.task.score,
+        action_score: starFeedback.original.action.score,
+        result_score: starFeedback.original.result.score,
+        overall_score: starFeedback.original.overall.score,
+        revised_situation_score: starFeedback.revised.situation.score,
+        revised_task_score: starFeedback.revised.task.score,
+        revised_action_score: starFeedback.revised.action.score,
+        revised_result_score: starFeedback.revised.result.score,
+        revised_overall_score: starFeedback.revised.overall.score,
+        situation_feedback: starFeedback.original.situation.feedback,
+        task_feedback: starFeedback.original.task.feedback,
+        action_feedback: starFeedback.original.action.feedback,
+        result_feedback: starFeedback.original.result.feedback,
+        overall_summary: starFeedback.original.overall.summary,
+        revised_overall_summary: starFeedback.revised.overall.summary,
+        improvement_summary: starFeedback.rewrite.improvementSummary,
+        strengths: starFeedback.original.overall.strengths,
+        weaknesses: starFeedback.original.overall.weaknesses,
+        improved_answer: starFeedback.rewrite.improvedAnswer,
+        keywords_used: starFeedback.original.overall.keywordsUsed,
+        keywords_missing: starFeedback.original.overall.keywordsMissing,
       })
       .select()
       .single();

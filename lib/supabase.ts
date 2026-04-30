@@ -22,6 +22,11 @@ interface SessionFeedbackScoreRecord {
   id: string;
   answer_id: string;
   overall_score: number | null;
+  revised_situation_score: number | null;
+  revised_task_score: number | null;
+  revised_action_score: number | null;
+  revised_result_score: number | null;
+  revised_overall_score: number | null;
   situation_score: number | null;
   task_score: number | null;
   action_score: number | null;
@@ -31,6 +36,8 @@ interface SessionFeedbackScoreRecord {
   action_feedback: string | null;
   result_feedback: string | null;
   overall_summary: string | null;
+  revised_overall_summary: string | null;
+  improvement_summary: string | null;
   strengths: string[] | null;
   weaknesses: string[] | null;
   improved_answer: string | null;
@@ -64,11 +71,18 @@ function mapFeedbackRow(row: SessionFeedbackScoreRecord): FeedbackRow {
     actionScore: row.action_score ?? 0,
     resultScore: row.result_score ?? 0,
     overallScore: row.overall_score ?? 0,
+    revisedSituationScore: row.revised_situation_score ?? row.situation_score ?? 0,
+    revisedTaskScore: row.revised_task_score ?? row.task_score ?? 0,
+    revisedActionScore: row.revised_action_score ?? row.action_score ?? 0,
+    revisedResultScore: row.revised_result_score ?? row.result_score ?? 0,
+    revisedOverallScore: row.revised_overall_score ?? row.overall_score ?? 0,
     situationFeedback: row.situation_feedback ?? "",
     taskFeedback: row.task_feedback ?? "",
     actionFeedback: row.action_feedback ?? "",
     resultFeedback: row.result_feedback ?? "",
     overallSummary: row.overall_summary ?? "",
+    revisedOverallSummary: row.revised_overall_summary ?? row.overall_summary ?? "",
+    improvementSummary: row.improvement_summary ?? "",
     strengths: row.strengths ?? [],
     weaknesses: row.weaknesses ?? [],
     improvedAnswer: row.improved_answer ?? "",
@@ -234,6 +248,11 @@ export async function getSessionDetailForUser(
             id,
             answer_id,
             overall_score,
+            revised_situation_score,
+            revised_task_score,
+            revised_action_score,
+            revised_result_score,
+            revised_overall_score,
             situation_score,
             task_score,
             action_score,
@@ -243,6 +262,8 @@ export async function getSessionDetailForUser(
             action_feedback,
             result_feedback,
             overall_summary,
+            revised_overall_summary,
+            improvement_summary,
             strengths,
             weaknesses,
             improved_answer,

@@ -5,6 +5,7 @@ import { DEFAULT_OPENAI_MODEL, getRequiredEnv } from "@/lib/env";
 import {
   followUpQuestionListSchema,
   personalizedQuestionListSchema,
+  starRewriteSchema,
   starFeedbackSchema,
   type FollowUpQuestionList,
   type PersonalizedQuestionList,
@@ -12,6 +13,16 @@ import {
 } from "@/lib/schemas";
 
 let client: OpenAI | null = null;
+
+const STAR_RUBRIC = [
+  "Use the full 1-10 range and do not default to middle scores.",
+  "9-10 means highly specific, clear ownership, strong STAR structure, and measurable results.",
+  "7-8 means solid STAR structure with good detail, but still missing some precision, depth, or quantified impact.",
+  "5-6 means understandable but incomplete, with vague ownership, weak metrics, or partial STAR coverage.",
+  "3-4 means major clarity or structure problems, little ownership, and little evidence of impact.",
+  "1-2 means severely incomplete, generic, or off-prompt.",
+  "Do not invent facts, metrics, or outcomes.",
+].join(" ");
 
 function getClient() {
   if (!client) {
@@ -28,14 +39,13 @@ export async function getSTARFeedback(
   answer: string,
   jobRole?: string,
 ): Promise<STARFeedback> {
-  const response = await getClient().responses.parse({
+  const originalResponse = await getClient().responses.parse({
     model: DEFAULT_OPENAI_MODEL,
     instructions: [
       "You are an expert behavioral interview coach.",
       "Evaluate the candidate using the STAR framework: Situation, Task, Action, Result.",
+      STAR_RUBRIC,
       "Be specific, direct, and constructive.",
-      "Reward quantified impact, ownership, and clarity.",
-      "Penalize vague context, missing ownership, or missing measurable outcomes.",
       jobRole ? `Calibrate feedback for a ${jobRole} role.` : "",
     ]
       .filter(Boolean)
@@ -43,19 +53,76 @@ export async function getSTARFeedback(
     input: [
       `Interview question: ${question}`,
       `Candidate answer: ${answer}`,
-      "Return STAR component scores, actionable feedback, an overall summary, strengths, weaknesses,",
-      "an improved answer rewrite, and high-value keywords used or missing.",
+      "Return STAR component scores, actionable feedback, an overall summary, strengths, weaknesses, and high-value keywords used or missing.",
     ].join("\n\n"),
     text: {
-      format: zodTextFormat(starFeedbackSchema, "star_feedback"),
+      format: zodTextFormat(starFeedbackSchema.shape.original, "star_evaluation"),
     },
   });
 
-  if (!response.output_parsed) {
-    throw new Error("OpenAI did not return parsed STAR feedback.");
+  if (!originalResponse.output_parsed) {
+    throw new Error("OpenAI did not return parsed STAR evaluation.");
   }
 
-  return response.output_parsed;
+  const rewriteResponse = await getClient().responses.parse({
+    model: DEFAULT_OPENAI_MODEL,
+    instructions: [
+      "You are an expert behavioral interview coach.",
+      "Rewrite the candidate's answer to improve its STAR score without inventing facts.",
+      STAR_RUBRIC,
+      "Preserve only facts supported by the original answer.",
+      "Improve clarity, ownership, sequencing, specificity, and result emphasis.",
+      jobRole ? `Calibrate the rewrite for a ${jobRole} role.` : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    input: [
+      `Interview question: ${question}`,
+      `Candidate original answer: ${answer}`,
+      `Evaluation summary: ${originalResponse.output_parsed.overall.summary}`,
+      `Strengths: ${originalResponse.output_parsed.overall.strengths.join("; ")}`,
+      `Weaknesses: ${originalResponse.output_parsed.overall.weaknesses.join("; ")}`,
+      "Return an improved answer and a short note describing what was improved.",
+    ].join("\n\n"),
+    text: {
+      format: zodTextFormat(starRewriteSchema, "star_rewrite"),
+    },
+  });
+
+  if (!rewriteResponse.output_parsed) {
+    throw new Error("OpenAI did not return a rewritten answer.");
+  }
+
+  const revisedResponse = await getClient().responses.parse({
+    model: DEFAULT_OPENAI_MODEL,
+    instructions: [
+      "You are an expert behavioral interview coach.",
+      "Evaluate the rewritten answer using the exact same STAR rubric.",
+      STAR_RUBRIC,
+      "Be honest about whether the rewrite actually improved the answer.",
+      jobRole ? `Calibrate feedback for a ${jobRole} role.` : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    input: [
+      `Interview question: ${question}`,
+      `Rewritten candidate answer: ${rewriteResponse.output_parsed.improvedAnswer}`,
+      "Return STAR component scores, actionable feedback, an overall summary, strengths, weaknesses, and high-value keywords used or missing.",
+    ].join("\n\n"),
+    text: {
+      format: zodTextFormat(starFeedbackSchema.shape.revised, "revised_star_evaluation"),
+    },
+  });
+
+  if (!revisedResponse.output_parsed) {
+    throw new Error("OpenAI did not return a revised STAR evaluation.");
+  }
+
+  return {
+    original: originalResponse.output_parsed,
+    rewrite: rewriteResponse.output_parsed,
+    revised: revisedResponse.output_parsed,
+  };
 }
 
 export async function generatePersonalizedQuestions(

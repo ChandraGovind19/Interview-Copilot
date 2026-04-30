@@ -6,11 +6,18 @@ export interface FeedbackRow {
   actionScore: number;
   resultScore: number;
   overallScore: number;
+  revisedSituationScore: number;
+  revisedTaskScore: number;
+  revisedActionScore: number;
+  revisedResultScore: number;
+  revisedOverallScore: number;
   situationFeedback: string;
   taskFeedback: string;
   actionFeedback: string;
   resultFeedback: string;
   overallSummary: string;
+  revisedOverallSummary: string;
+  improvementSummary: string;
   strengths: string[];
   weaknesses: string[];
   improvedAnswer: string;

@@ -50,23 +50,16 @@ export const feedbackRequestSchema = z.object({
 
 const scoreSchema = z.number().int().min(1).max(10);
 
-export const starFeedbackSchema = z.object({
-  situation: z.object({
-    score: scoreSchema,
-    feedback: z.string().trim().min(1),
-  }),
-  task: z.object({
-    score: scoreSchema,
-    feedback: z.string().trim().min(1),
-  }),
-  action: z.object({
-    score: scoreSchema,
-    feedback: z.string().trim().min(1),
-  }),
-  result: z.object({
-    score: scoreSchema,
-    feedback: z.string().trim().min(1),
-  }),
+const starDimensionSchema = z.object({
+  score: scoreSchema,
+  feedback: z.string().trim().min(1),
+});
+
+const starEvaluationSchema = z.object({
+  situation: starDimensionSchema,
+  task: starDimensionSchema,
+  action: starDimensionSchema,
+  result: starDimensionSchema,
   overall: z.object({
     score: scoreSchema,
     summary: z.string().trim().min(1),
@@ -76,6 +69,17 @@ export const starFeedbackSchema = z.object({
     keywordsUsed: z.array(z.string().trim().min(1)).max(6),
     keywordsMissing: z.array(z.string().trim().min(1)).max(6),
   }),
+});
+
+export const starRewriteSchema = z.object({
+  improvedAnswer: z.string().trim().min(80),
+  improvementSummary: z.string().trim().min(1),
+});
+
+export const starFeedbackSchema = z.object({
+  original: starEvaluationSchema,
+  rewrite: starRewriteSchema,
+  revised: starEvaluationSchema,
 });
 
 export type STARFeedback = z.infer<typeof starFeedbackSchema>;

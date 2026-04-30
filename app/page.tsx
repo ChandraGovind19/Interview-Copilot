@@ -77,19 +77,6 @@ export default async function HomePage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <SignUpButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
-                <Button size="lg">Create a practice session</Button>
-              </SignUpButton>
-              <SignInButton
-                mode="modal"
-                forceRedirectUrl="/dashboard"
-                fallbackRedirectUrl="/dashboard"
-              >
-                <Button size="lg" variant="outline">Open dashboard</Button>
-              </SignInButton>
-            </div>
-
             <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground">
               {proofPoints.map((point) => (
                 <div key={point} className="flex min-w-fit items-center gap-3">
@@ -101,20 +88,15 @@ export default async function HomePage() {
           </div>
 
           <div className="surface-soft self-start overflow-hidden p-8 sm:p-10">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="section-kicker">Session preview</p>
-                <h2 className="mt-2 text-3xl text-foreground">A cleaner way to practice</h2>
-              </div>
-              <div className="rounded-full border border-border/80 bg-white/80 px-3 py-1 text-sm text-muted-foreground dark:bg-background/20">
-                Behavioral loop
-              </div>
+            <div>
+              <p className="section-kicker">Session preview</p>
+              <h2 className="mt-2 text-3xl text-foreground">A cleaner way to practice</h2>
             </div>
 
             <div className="mt-10 grid gap-6">
               {workflow.map((item, index) => (
                 <div key={item.title} className="grid gap-4 sm:grid-cols-[56px_minmax(0,1fr)] sm:items-start">
-                  <div className="flex size-14 items-center justify-center rounded-full border border-border/80 bg-white/85 text-sm font-semibold text-foreground">
+                  <div className="flex size-14 items-center justify-center rounded-full border border-border/80 bg-white/85 text-sm font-semibold text-foreground dark:bg-background/30 dark:text-foreground">
                     0{index + 1}
                   </div>
                   <div className="space-y-2">
@@ -129,43 +111,54 @@ export default async function HomePage() {
 
         <section className="surface-subtle grid gap-8 p-8 sm:p-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div className="space-y-4">
-            <p className="section-kicker">What changes in this version</p>
-            <h2 className="text-4xl text-foreground">Less dashboard clutter, more readable feedback.</h2>
+            <p className="section-kicker">How scoring works</p>
+            <h2 className="text-4xl text-foreground">Answers are graded against a clear STAR rubric.</h2>
             <p className="text-base leading-8 text-muted-foreground">
-              The experience is now designed like a writing workspace: calm structure, softer
-              surfaces, room for long-form answers, and feedback blocks that are easier to scan.
+              The model does not just give one vague rating. It scores Situation, Task, Action,
+              and Result separately, then rewrites the answer and runs the same rubric again so
+              you can see whether the revision actually improves the answer.
             </p>
           </div>
 
           <div className="grid gap-6">
             <div className="grid gap-5 sm:grid-cols-3">
               <div>
-                <p className="metric-label">Palette</p>
+                <p className="metric-label">9-10</p>
                 <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  Warm neutrals with one slate-blue accent instead of high-contrast dark mode.
+                  Highly specific answer with clear ownership, strong structure, and measurable
+                  outcomes.
                 </p>
               </div>
               <div>
-                <p className="metric-label">Typography</p>
+                <p className="metric-label">7-8</p>
                 <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  Fraunces for hierarchy and Manrope for body copy to separate reading modes.
+                  Good STAR structure and detail, but still missing some depth, precision, or
+                  quantified impact.
                 </p>
               </div>
               <div>
-                <p className="metric-label">Layout</p>
+                <p className="metric-label">5-6</p>
                 <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  A clearer split between session controls, writing space, and coaching output.
+                  Understandable answer with partial structure, but vague ownership, weak metrics,
+                  or incomplete context.
                 </p>
               </div>
             </div>
             <Separator />
-            <div className="flex flex-wrap gap-3">
-              <SignUpButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
-                <Button>Create your first session</Button>
-              </SignUpButton>
-              <SignInButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
-                <Button variant="outline">Use an existing account</Button>
-              </SignInButton>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <p className="metric-label">1-4</p>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                  Generic, thin, or incomplete answer with major structure or clarity problems.
+                </p>
+              </div>
+              <div>
+                <p className="metric-label">Rewrite check</p>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                  The app compares the original score with a second evaluation of the rewritten
+                  answer so the improvement signal is explicit.
+                </p>
+              </div>
             </div>
           </div>
         </section>

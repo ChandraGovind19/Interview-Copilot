@@ -19,9 +19,17 @@ export function FeedbackCard({ feedback }: FeedbackCardProps) {
               {feedback.overallSummary}
             </CardDescription>
           </div>
-          <div className="surface-subtle min-w-[140px] p-4 text-right">
-            <p className="metric-label">Overall score</p>
-            <p className="mt-3 text-4xl font-semibold text-foreground">{feedback.overallScore}/10</p>
+          <div className="grid min-w-[280px] gap-3 sm:grid-cols-2">
+            <div className="surface-subtle p-4 text-right">
+              <p className="metric-label">Original score</p>
+              <p className="mt-3 text-4xl font-semibold text-foreground">{feedback.overallScore}/10</p>
+            </div>
+            <div className="surface-subtle p-4 text-right">
+              <p className="metric-label">Rewrite estimate</p>
+              <p className="mt-3 text-4xl font-semibold text-foreground">
+                {feedback.revisedOverallScore}/10
+              </p>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -31,6 +39,43 @@ export function FeedbackCard({ feedback }: FeedbackCardProps) {
           <StarScoreBar label="Task" score={feedback.taskScore} feedback={feedback.taskFeedback} />
           <StarScoreBar label="Action" score={feedback.actionScore} feedback={feedback.actionFeedback} />
           <StarScoreBar label="Result" score={feedback.resultScore} feedback={feedback.resultFeedback} />
+        </div>
+
+        <div className="surface-subtle grid gap-5 p-5 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-3">
+            <p className="metric-label">Rubric score change</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[20px] border border-border/70 bg-background/65 p-4 dark:bg-background/25">
+                <p className="metric-label">Situation</p>
+                <p className="mt-2 text-lg font-semibold text-foreground">
+                  {feedback.situationScore} → {feedback.revisedSituationScore}
+                </p>
+              </div>
+              <div className="rounded-[20px] border border-border/70 bg-background/65 p-4 dark:bg-background/25">
+                <p className="metric-label">Task</p>
+                <p className="mt-2 text-lg font-semibold text-foreground">
+                  {feedback.taskScore} → {feedback.revisedTaskScore}
+                </p>
+              </div>
+              <div className="rounded-[20px] border border-border/70 bg-background/65 p-4 dark:bg-background/25">
+                <p className="metric-label">Action</p>
+                <p className="mt-2 text-lg font-semibold text-foreground">
+                  {feedback.actionScore} → {feedback.revisedActionScore}
+                </p>
+              </div>
+              <div className="rounded-[20px] border border-border/70 bg-background/65 p-4 dark:bg-background/25">
+                <p className="metric-label">Result</p>
+                <p className="mt-2 text-lg font-semibold text-foreground">
+                  {feedback.resultScore} → {feedback.revisedResultScore}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <p className="metric-label">Why the rewrite scores differently</p>
+            <p className="text-sm leading-7 text-muted-foreground">{feedback.improvementSummary}</p>
+            <p className="text-sm leading-7 text-muted-foreground">{feedback.revisedOverallSummary}</p>
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">

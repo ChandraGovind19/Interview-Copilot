@@ -36,7 +36,7 @@ export default async function DashboardLayout({
                       Practice
                     </Link>
                     <ThemeToggle />
-                    <UserButton afterSignOutUrl="/" />
+                    <UserButton />
                   </div>
                 </header>
         <div className="flex-1">{children}</div>

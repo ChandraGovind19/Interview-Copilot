@@ -128,19 +128,34 @@
   }
 
   body {
-    @apply transition-colors duration-200;
+    @apply relative min-h-screen transition-colors duration-200;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background:
-      radial-gradient(circle at top left, rgba(132, 148, 173, 0.2), transparent 28%),
-      radial-gradient(circle at bottom right, rgba(164, 178, 198, 0.18), transparent 25%),
-      linear-gradient(180deg, rgba(238, 233, 225, 0.96), rgba(228, 223, 214, 0.98));
+      radial-gradient(circle at top left, rgba(132, 148, 173, 0.18), transparent 30%),
+      radial-gradient(circle at 88% 18%, rgba(193, 176, 150, 0.12), transparent 26%),
+      radial-gradient(circle at bottom right, rgba(164, 178, 198, 0.15), transparent 28%),
+      linear-gradient(180deg, rgba(242, 237, 229, 0.98), rgba(228, 223, 214, 1));
   }
 
   html.dark body,
   html[data-theme="dark"] body {
+    background: transparent;
+  }
+
+  html.dark body::before,
+  html[data-theme="dark"] body::before {
     background:
-      radial-gradient(circle at top left, rgba(99, 117, 155, 0.2), transparent 28%),
-      radial-gradient(circle at bottom right, rgba(53, 66, 92, 0.28), transparent 24%),
-      linear-gradient(180deg, rgba(30, 34, 46, 0.98), rgba(22, 25, 36, 1));
+      radial-gradient(circle at top left, rgba(99, 117, 155, 0.18), transparent 30%),
+      radial-gradient(circle at 86% 20%, rgba(71, 90, 128, 0.12), transparent 26%),
+      radial-gradient(circle at bottom right, rgba(53, 66, 92, 0.24), transparent 26%),
+      linear-gradient(180deg, rgba(30, 34, 46, 0.99), rgba(22, 25, 36, 1));
   }
 
   h1,
@@ -158,7 +173,7 @@
 
 @layer components {
   .page-shell {
-    @apply mx-auto flex w-full max-w-7xl flex-col px-6 lg:px-10;
+    @apply relative z-10 mx-auto flex w-full max-w-7xl flex-col px-6 lg:px-10;
   }
 
   .section-kicker {

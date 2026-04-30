@@ -1,10 +1,9 @@
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const workflow = [
@@ -36,31 +35,37 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="min-h-screen pb-16 pt-8 sm:pt-10">
-      <div className="page-shell gap-16">
-                <header className="flex flex-wrap items-center justify-between gap-4 rounded-full border border-border/70 bg-background/80 px-5 py-3 shadow-[0_20px_40px_-32px_rgba(35,48,79,0.18)] backdrop-blur dark:bg-card/70 dark:shadow-[0_18px_40px_-28px_rgba(0,0,0,0.55)]">
+    <main className="min-h-screen pb-16 pt-6 sm:pt-8">
+      <div className="page-shell gap-14 lg:gap-18">
+        <header className="flex flex-col gap-4 rounded-[30px] border border-border/70 bg-background/82 px-5 py-4 shadow-[0_20px_48px_-34px_rgba(35,48,79,0.18)] backdrop-blur sm:flex-row sm:items-center sm:justify-between dark:bg-card/72 dark:shadow-[0_22px_55px_-36px_rgba(0,0,0,0.58)]">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
               IC
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground">Interview Copilot</p>
-              <p className="text-sm text-muted-foreground">Practice behavioral answers with structure</p>
+              <p className="text-sm text-muted-foreground">
+                Practice behavioral answers with structure
+              </p>
             </div>
           </div>
-                  <div className="flex items-center gap-3">
-                    <ThemeToggle />
-                    <SignInButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
-                      <Button variant="ghost">Sign in</Button>
-                    </SignInButton>
+          <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+            <ThemeToggle />
+            <SignInButton
+              mode="modal"
+              forceRedirectUrl="/dashboard"
+              fallbackRedirectUrl="/dashboard"
+            >
+              <Button variant="ghost">Sign in</Button>
+            </SignInButton>
             <SignUpButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
               <Button>Start free</Button>
             </SignUpButton>
           </div>
         </header>
 
-        <section className="grid gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] lg:items-end">
-          <div className="flex flex-col gap-8">
+        <section className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] lg:items-start">
+          <div className="flex flex-col gap-7 pt-2">
             <div className="flex flex-col gap-5">
               <p className="section-kicker">Interview practice, redesigned for clarity</p>
               <h1 className="max-w-4xl text-5xl leading-[0.95] text-foreground sm:text-6xl lg:text-7xl">
@@ -76,14 +81,18 @@ export default async function HomePage() {
               <SignUpButton mode="modal" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
                 <Button size="lg">Create a practice session</Button>
               </SignUpButton>
-              <Link href="/dashboard" className={buttonVariants({ size: "lg", variant: "outline" })}>
-                View the workspace
-              </Link>
+              <SignInButton
+                mode="modal"
+                forceRedirectUrl="/dashboard"
+                fallbackRedirectUrl="/dashboard"
+              >
+                <Button size="lg" variant="outline">Open dashboard</Button>
+              </SignInButton>
             </div>
 
-            <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
+            <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-muted-foreground">
               {proofPoints.map((point) => (
-                <div key={point} className="flex items-center gap-3">
+                <div key={point} className="flex min-w-fit items-center gap-3">
                   <span className="size-2 rounded-full bg-primary/70" />
                   <span>{point}</span>
                 </div>
@@ -91,13 +100,13 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="surface-soft overflow-hidden p-8 sm:p-10">
+          <div className="surface-soft self-start overflow-hidden p-8 sm:p-10">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="section-kicker">Session preview</p>
                 <h2 className="mt-2 text-3xl text-foreground">A cleaner way to practice</h2>
               </div>
-              <div className="rounded-full border border-border/80 bg-white/80 px-3 py-1 text-sm text-muted-foreground">
+              <div className="rounded-full border border-border/80 bg-white/80 px-3 py-1 text-sm text-muted-foreground dark:bg-background/20">
                 Behavioral loop
               </div>
             </div>
@@ -118,7 +127,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="surface-subtle grid gap-8 p-8 sm:p-10 lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="surface-subtle grid gap-8 p-8 sm:p-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div className="space-y-4">
             <p className="section-kicker">What changes in this version</p>
             <h2 className="text-4xl text-foreground">Less dashboard clutter, more readable feedback.</h2>

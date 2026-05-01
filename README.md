@@ -9,7 +9,10 @@ The current build is focused on making interview practice feel persistent instea
 - creates named interview practice sessions tied to a target role
 - lets users resume old sessions instead of starting over
 - generates STAR-based AI feedback for each answer
+- rewrites each answer and re-scores it with the same rubric
 - stores answer history, score history, and feedback history in Supabase
+- generates personalized questions from a saved experience profile
+- supports custom pasted questions and AI follow-up questions
 - supports light and dark mode
 - uses Clerk for authentication so each user sees only their own sessions
 
@@ -21,12 +24,14 @@ The current build is focused on making interview practice feel persistent instea
 4. Write an answer
 5. Get AI feedback with:
    - Situation / Task / Action / Result scores
-   - overall score
+   - original overall score
+   - rewritten-answer estimated score
    - strengths
    - weaknesses
    - improved answer rewrite
    - keyword coverage
-6. Revisit the session later and continue improving answers in the same thread of work
+6. Generate a follow-up question or continue with another prompt in the same session
+7. Revisit the session later and continue improving answers in the same thread of work
 
 ## Why This Project Exists
 
@@ -40,23 +45,19 @@ Interview Copilot is trying to solve that by treating a practice session as the 
 
 ## Features
 
-### Current
-
 - authentication with Clerk
 - session hub for creating and reopening sessions
 - dedicated session pages with answer history
 - AI feedback generation with OpenAI
-- STAR scoring breakdown
-- improved answer rewrite
+- STAR scoring breakdown across Situation, Task, Action, and Result
+- answer rewrite plus second-pass rubric re-evaluation
+- experience profile storage for personalization
+- AI-generated personalized questions
+- custom question input
+- follow-up interviewer mode
 - session rename and delete
 - in-app delete confirmation modal
 - dark mode / light mode toggle
-
-### In Progress Direction
-
-- richer prompt variety beyond a small static question bank
-- more personalized coaching and follow-up guidance
-- better long-term progress tracking across sessions
 
 ## Tech Stack
 
@@ -84,35 +85,21 @@ supabase/schema.sql       Database schema
 
 ## Screenshots
 
-There are no committed screenshots in the repo yet.
+### Landing Page
 
-Recommended screenshots to add before submission:
+![Landing page](docs/screenshots/landing-page.png)
 
-- landing page
-- session hub
-- active session workspace
-- feedback panel
-- session history view
-- dark mode view
+### Dashboard
 
-Suggested folder structure:
+![Dashboard overview](docs/screenshots/dashboard-overview.png)
 
-```text
-docs/screenshots/
-  landing.png
-  session-hub.png
-  session-workspace.png
-  feedback-panel.png
-  dark-mode.png
-```
+### Practice Workspace
 
-Once those images exist, this section can be updated to:
+![Practice workspace](docs/screenshots/practice-workspace.png)
 
-```md
-![Landing page](docs/screenshots/landing.png)
-![Session hub](docs/screenshots/session-hub.png)
-![Session workspace](docs/screenshots/session-workspace.png)
-```
+### Feedback Flow
+
+![Feedback flow](docs/screenshots/feedback-flow.png)
 
 ## Local Development
 
@@ -155,6 +142,7 @@ This creates:
 - `sessions`
 - `answers`
 - `feedback`
+- `experience_profiles`
 
 ### 4. Start the dev server
 
@@ -212,6 +200,22 @@ Deletes a session and its related answers and feedback.
 
 Creates an answer inside a session and generates AI feedback for it.
 
+### `GET /api/profile`
+
+Returns the signed-in user's saved experience profile.
+
+### `POST /api/profile`
+
+Creates or updates the user's experience profile for personalized coaching.
+
+### `POST /api/questions/personalized`
+
+Generates fresh interview questions from the saved experience profile and session role.
+
+### `POST /api/questions/follow-up`
+
+Generates follow-up interviewer questions based on the user's answer.
+
 ## Database Model
 
 ### `sessions`
@@ -229,15 +233,21 @@ Creates an answer inside a session and generates AI feedback for it.
 
 - one row per AI coaching result
 - tied to an answer
-- stores STAR scores, summary, strengths, weaknesses, improved answer, and keyword analysis
+- stores original STAR scores, rewritten-answer STAR scores, summary, strengths, weaknesses, improved answer, and keyword analysis
+
+### `experience_profiles`
+
+- one row per user
+- stores reusable background context for personalization
+- includes target role and pasted experience text
 
 ## Current Limitations
 
-- the question bank is still static and relatively small
-- there is no adaptive follow-up questioning yet
-- there is no role-specific rubric library yet
+- the question bank is still relatively small even though personalized generation reduces repetition
+- follow-up mode is text-based only, not a full conversational mock interview
 - there is no export/share flow yet
-- there is no analytics view for long-term progress trends yet
+- there is no analytics dashboard for long-term progress trends yet
+- resume intake currently uses pasted experience text, not file upload parsing
 
 ## Good Next Features
 
@@ -245,17 +255,15 @@ If there is another week to improve the project, the highest-value additions are
 
 1. Dynamic question generation
    - generate role-specific and company-specific behavioral questions instead of repeating a fixed bank
-2. Follow-up interviewer mode
-   - after an answer, ask one realistic follow-up question based on what the user said
+2. Progress analytics
+   - show how STAR scores change over time across sessions and categories
 3. Story library
    - let users save core stories once, then reuse and adapt them across many prompts
-4. Progress analytics
-   - show how STAR scores change over time across sessions and categories
-5. Weakness targeting
+4. Weakness targeting
    - identify recurring issues such as vague actions, weak metrics, or missing results and recommend drills
-6. Mock interview mode
+5. Mock interview mode
    - run a timed multi-question practice session instead of one answer at a time
-7. Question source expansion
+6. Question source expansion
    - add curated banks for internships, new grad, PM, data, and consulting roles
 
 ## Submission Notes

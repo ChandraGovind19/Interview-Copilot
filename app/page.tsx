@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
 const workflow = [
   {
@@ -109,54 +108,55 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="surface-subtle grid gap-8 p-8 sm:p-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+        <section className="surface-subtle grid gap-10 p-8 sm:p-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
           <div className="space-y-4">
             <p className="section-kicker">How scoring works</p>
-            <h2 className="text-4xl text-foreground">Answers are graded against a clear STAR rubric.</h2>
-            <p className="text-base leading-8 text-muted-foreground">
-              The model does not just give one vague rating. It scores Situation, Task, Action,
-              and Result separately, then rewrites the answer and runs the same rubric again so
-              you can see whether the revision actually improves the answer.
+            <h2 className="max-w-2xl text-4xl text-foreground">
+              The rubric shows what changed, not just what the model thinks.
+            </h2>
+            <p className="max-w-xl text-base leading-8 text-muted-foreground">
+              Each answer is scored on Situation, Task, Action, and Result. Then the app rewrites
+              the answer without adding new facts and runs the same rubric again so you can compare
+              the first score to the revised estimate.
             </p>
           </div>
 
           <div className="grid gap-6">
-            <div className="grid gap-5 sm:grid-cols-3">
-              <div>
-                <p className="metric-label">9-10</p>
-                <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  Highly specific answer with clear ownership, strong structure, and measurable
-                  outcomes.
-                </p>
+            <div className="grid gap-4 sm:grid-cols-[56px_minmax(0,1fr)] sm:items-start">
+              <div className="flex size-14 items-center justify-center rounded-full border border-border/80 bg-white/85 text-sm font-semibold text-foreground dark:bg-background/30 dark:text-foreground">
+                01
               </div>
-              <div>
-                <p className="metric-label">7-8</p>
-                <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  Good STAR structure and detail, but still missing some depth, precision, or
-                  quantified impact.
-                </p>
-              </div>
-              <div>
-                <p className="metric-label">5-6</p>
-                <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  Understandable answer with partial structure, but vague ownership, weak metrics,
-                  or incomplete context.
+              <div className="space-y-2">
+                <p className="text-lg font-semibold text-foreground">STAR breakdown</p>
+                <p className="max-w-xl text-sm leading-7 text-muted-foreground">
+                  Situation, Task, Action, and Result are scored separately so weak sections are
+                  easy to spot.
                 </p>
               </div>
             </div>
-            <Separator />
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <p className="metric-label">1-4</p>
-                <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  Generic, thin, or incomplete answer with major structure or clarity problems.
+
+            <div className="grid gap-4 sm:grid-cols-[56px_minmax(0,1fr)] sm:items-start">
+              <div className="flex size-14 items-center justify-center rounded-full border border-border/80 bg-white/85 text-sm font-semibold text-foreground dark:bg-background/30 dark:text-foreground">
+                02
+              </div>
+              <div className="space-y-2">
+                <p className="text-lg font-semibold text-foreground">Score bands</p>
+                <p className="max-w-xl text-sm leading-7 text-muted-foreground">
+                  9-10 means specific and measurable, 7-8 is solid but not complete, 5-6 is partial,
+                  and 1-4 means the answer is still too vague or thin.
                 </p>
               </div>
-              <div>
-                <p className="metric-label">Rewrite check</p>
-                <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  The app compares the original score with a second evaluation of the rewritten
-                  answer so the improvement signal is explicit.
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-[56px_minmax(0,1fr)] sm:items-start">
+              <div className="flex size-14 items-center justify-center rounded-full border border-border/80 bg-white/85 text-sm font-semibold text-foreground dark:bg-background/30 dark:text-foreground">
+                03
+              </div>
+              <div className="space-y-2">
+                <p className="text-lg font-semibold text-foreground">Rewrite check</p>
+                <p className="max-w-xl text-sm leading-7 text-muted-foreground">
+                  After feedback, the app rewrites the answer and scores that version again so the
+                  improvement signal is explicit.
                 </p>
               </div>
             </div>
